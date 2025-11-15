@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>English Online Class</title>
+  <style>
+    body {
+      font-family: -apple-system, Arial, sans-serif;
+      background: #f0f7ff;
+      color: #222;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #1E88E5;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.8em;
+    }
+    nav {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 15px;
+    }
+    nav button {
+      padding: 10px 18px;
+      background: #42A5F5;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    nav button:hover {
+      background: #2196F3;
+    }
+    nav button.active {
+      background: #1565C0;
+    }
+    .tab {
+      display: none;
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 3px 12px rgba(0,0,0,.1);
+    }
+    .tab.active {
+      display: block;
+    }
+    .homework {
+      background: #e8f5e9;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 10px;
+      border-left: 5px solid #43A047;
+    }
+    .date {
+      font-weight: bold;
+      color: #43A047;
+    }
+    textarea, input {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 1em;
+      box-sizing: border-box;
+    }
+    button.add {
+      background: #4CAF50;
+      color: #fff;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      width: 100%;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button.add:hover {
+      background: #43A047;
+    }
+    .question {
+      background: #fff8e1;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border-left: 4px solid #FFB300;
+      word-wrap: break-word;
+    }
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+      font-size: .9em;
+    }
+    @media (max-width: 600px) {
+      nav {
+        flex-direction: column;
+      }
+      nav button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>English Online Class</h1>
+  <p>Homework • Questions • Updates</p>
+</header>
+<nav>
+  <button onclick="openTab('student')" class="active">Student</button>
+  <button onclick="openTab('teacher')">Post Homework</button>
+  <button onclick="openTab('owner')">Owner Panel</button>
+</nav>
+<div id="student" class="tab active">
+  <h2>Latest Homework</h2>
+  <div id="hwList"><p>No homework yet!</p></div>
+  <h2 style="margin-top:30px;">Ask a Question</h2>
+  <textarea id="qText" placeholder="Type your question..."></textarea>
+  <button class="add" onclick="askQuestion()">Submit</button>
+  <div id="qSent" style="color:green;margin-top:10px;"></div>
+</div>
+<div id="teacher" class="tab">
+  <h2>Post New Homework</h2>
+  <input type="text" id="hwTitle" placeholder="Title" />
+  <input type="date" id="hwDue" />
+  <textarea id="hwDesc" placeholder="Instructions..."></textarea>
+  <button class="add" onclick="postHomework()">Post Homework</button>
+  <h3 style="margin-top:25px;">Student Questions</h3>
+  <div id="teacherQuestions"><p>No questions yet.</p></div>
+</div>
+<div id="owner" class="tab">
+  <h2>Owner Panel</h2>
+  <input type="password" id="ownerKey" placeholder="Enter key..." />
+  <button class="add" onclick="unlockOwner()" style="max-width:300px;">Unlock</button>
+  <div id="ownerArea" style="display:none;">
+    <h3>All Questions</h3>
+    <div id="allQuestions"></div>
+  </div>
+</div>
+<footer>
+  © 2025 English Online Class • Your Site
+</footer>
+<script>
+  function openTab(tab) {
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    document.getElementById(tab).classList.add('active');
+    document.querySelector(`button[onclick="openTab('${tab}')"]`).classList.add('active');
+  }
+  function getHw() { return JSON.parse(localStorage.getItem('hw')||'[]'); }
+  function saveHw(arr) { localStorage.setItem('hw', JSON.stringify(arr)); }
+  function getQs() { return JSON.parse(localStorage.getItem('qs')||'[]'); }
+  function saveQs(arr) { localStorage.setItem('qs', JSON.stringify(arr)); }
+  function loadAll() { loadHomework(); loadQuestions(); }
+  function loadHomework() {
+    const list = document.getElementById('hwList');
+    list.innerHTML = '';
+    const hw = getHw();
+    if (!hw.length) { list.innerHTML = '<p>No homework yet!</p>'; return; }
+    hw.forEach(h => {
+      const d = document.createElement('div');
+      d.className = 'homework';
+      d.innerHTML = `<div class="date">Due: ${new Date(h.due).toLocaleDateString()}</div><h3>${h.title}</h3><p>${h.desc}</p>`;
+      list.appendChild(d);
+    });
+  }
+  function postHomework() {
+    const t = document.getElementById('hwTitle').value.trim();
+    const d = document.getElementById('hwDue').value;
+    const desc = document.getElementById('hwDesc').value.trim();
+    if (!t || !d || !desc) return alert('Fill all fields!');
+    const hw = {title:t, due:d, desc, id:Date.now()};
+    saveHw([...getHw(), hw]);
+    document.getElementById('hwTitle').value = '';
+    document.getElementById('hwDue').value = '';
+    document.getElementById('hwDesc').value = '';
+    loadHomework();
+    loadQuestions();
+    alert('Homework posted!');
+  }
+  function askQuestion() {
+    const txt = document.getElementById('qText').value.trim();
+    if (!txt) return alert('Write a question!');
+    const q = {text:txt, time:new Date().toLocaleString(), id:Date.now()};
+    saveQs([...getQs(), q]);
+    document.getElementById('qText').value = '';
+    document.getElementById('qSent').textContent = 'Question sent!';
+    setTimeout(() => document.getElementById('qSent').textContent = '', 3000);
+  }
+  function loadQuestions() {
+    ['teacherQuestions', 'allQuestions'].forEach(id => {
+      const container = document.getElementById(id);
+      container.innerHTML = '';
+      const qs = getQs();
+      if (!qs.length) { container.innerHTML = '<p>No questions yet.</p>'; return; }
+      qs.forEach(q => {
+        const div = document.createElement('div');
+        div.className = 'question';
+        div.innerHTML = `<strong>${q.time}</strong><p>${q.text}</p>`;
+        container.appendChild(div);
+      });
+    });
+  }
+  function unlockOwner() {
+    if (document.getElementById('ownerKey').value === 'AdminOnline') {
+      document.getElementById('ownerArea').style.display = 'block';
+      loadQuestions();
+    } else {
+      alert('Wrong key!');
+    }
+  }
+  window.onload = loadAll;
+</script>
+</body>
+</html>
